@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fondos de Inversión Hencorp — Rendimientos</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<style>
+  :root{ --navy:#1F3864; --navy2:#2E4A7D; --ink:#1f2937; --muted:#6b7280; --line:#e5e7eb; --bg:#f7f8fa; --pos:#067647; --neg:#b42318; }
+  *{box-sizing:border-box} html,body{margin:0}
+  body{font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:var(--ink);background:var(--bg);line-height:1.45}
+  header{background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff;padding:22px 20px}
+  .wrap{max-width:1120px;margin:0 auto;padding:0 16px}
+  header h1{margin:0 0 4px;font-size:20px} header p{margin:0;color:#cdd7ec;font-size:13px}
+  .badges{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .badge{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.25);border-radius:999px;padding:3px 10px;font-size:12px}
+  .btn{margin-left:auto;background:#16a34a;color:#fff;text-decoration:none;padding:9px 14px;border-radius:8px;font-weight:600;font-size:13px;white-space:nowrap}
+  .btn:hover{filter:brightness(1.07)}
+  section{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px 16px 18px;margin:16px 0}
+  h2{font-size:15px;margin:0 0 12px;color:var(--navy)}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{padding:7px 9px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+  th:first-child,td:first-child{text-align:left}
+  thead th{background:var(--navy);color:#fff;position:sticky;top:0;font-weight:600}
+  tbody tr:nth-child(even){background:#fafbfc}
+  .fund{font-weight:600}
+  .pos{color:var(--pos)} .neg{color:var(--neg)} .na{color:#c7ccd4}
+  .scroll{overflow:auto;max-height:430px;border:1px solid var(--line);border-radius:8px}
+  .row{display:flex;gap:16px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+  select{padding:7px 10px;border:1px solid var(--line);border-radius:8px;font-size:13px}
+  .pill{display:inline-block;font-size:11px;padding:2px 8px;border-radius:999px;background:#eef2f9;color:var(--navy);border:1px solid #dbe3f2}
+  .note{font-size:12.5px;color:var(--muted);background:#fff8ec;border:1px solid #f3e2bd;border-radius:10px;padding:12px 14px}
+  .note b{color:#92400e}
+  .chartbox{position:relative;height:340px}
+  footer{color:var(--muted);font-size:12px;text-align:center;padding:14px 0 30px}
+  .err{background:#fde8e8;border:1px solid #f5b5b5;color:#7a271a;padding:12px;border-radius:8px}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <div class="row" style="margin:0;justify-content:space-between">
+    <div>
+      <h1>Fondos de Inversión Hencorp — Rendimientos</h1>
+      <p>Grupo Hencorp · Gestora de Fondos de Inversión — actualización automática desde hencorpgestora.com</p>
+    </div>
+    <a id="dl" class="btn" href="fondos-hencorp-rendimientos.xlsx" download="MEZCLA - Rendimientos 6 Fondos de Inversion Hencorp.xlsx">⬇ Descargar Excel</a>
+  </div>
+  <div class="badges" id="badges"></div>
+</div></header>
+
+<div class="wrap" id="app">
+  <section><h2>Resumen — 6 fondos</h2><div id="resumen"></div></section>
+
+  <section>
+    <h2>Crecimiento del valor cuota (base 100 = inicio de cada fondo)</h2>
+    <div class="chartbox"><canvas id="growth"></canvas></div>
+  </section>
+
+  <section><h2>Rendimiento anual (desde la cuota)</h2><div class="scroll"><div id="anual"></div></div></section>
+
+  <section>
+    <h2>Detalle por fondo — rendimiento mensual</h2>
+    <div class="row"><label for="sel">Fondo:</label><select id="sel"></select><span id="ftag" class="pill"></span></div>
+    <div class="chartbox" style="height:300px"><canvas id="monthly"></canvas></div>
+    <div class="scroll" style="margin-top:12px"><div id="mtable"></div></div>
+  </section>
+
+  <section class="note">
+    <b>Metodología y advertencias.</b> Rendimiento mensual = (valor cuota fin de mes ÷ fin de mes anterior) − 1.
+    El mes en curso es <b>parcial</b>. En <b>Opportunity</b> (abierto) la cuota acumula limpio, por lo que equivale al rendimiento total.
+    En los cerrados, ojo: <b>Renta Fija I distribuye en mayo y noviembre</b> (la cuota baja esos meses, así que su rendimiento medido solo desde la cuota
+    <b>subestima</b> el total que recibe el partícipe); <b>Growth</b> y <b>Vivienda 01</b> tienen revaluaciones inmobiliarias (saltos grandes);
+    <b>Commercial Properties</b> inició en mayo-2026 (historia mínima). El Excel descargable incluye el detalle completo y la hoja de notas.
+  </section>
+</div>
+
+<footer class="wrap">Fuente: Hencorp Gestora de Fondos de Inversión, S.A. — Comportamiento Histórico (PDF público). Sitio generado automáticamente; no constituye asesoría de inversión.</footer>
+
+<script>
+const COLORS=["#1F3864","#2E8B57","#C0504D","#E0A800","#7E57C2","#0E7C86"];
+const pct=v=>(v==null?'':(v*100).toFixed(2)+'%');
+const cls=v=>v==null?'na':(v<0?'neg':'pos');
+const money=v=>v==null?'':'$'+Math.round(v).toLocaleString('en-US');
+
+fetch('data.json?_='+Date.now()).then(r=>r.json()).then(render).catch(e=>{
+  document.getElementById('app').innerHTML='<div class="err">No se pudo cargar <code>data.json</code>. Si acabás de publicar, esperá ~1 minuto a que GitHub Pages actualice. Detalle: '+e+'</div>';
+});
+
+function render(d){
+  document.getElementById('badges').innerHTML=
+    `<span class="badge">📅 Datos al ${d.data_through}</span>`+
+    `<span class="badge">🔄 Actualizado ${d.updated_at}</span>`+
+    `<span class="badge">📊 ${d.funds.length} fondos</span>`;
+
+  // Resumen
+  let h='<table><thead><tr><th>Fondo</th><th>Tipo</th><th>Inicio</th><th>VC actual</th><th>Patrimonio</th><th>Rend. acum.</th></tr></thead><tbody>';
+  d.funds.forEach(f=>{ h+=`<tr><td class="fund">${f.name}</td><td>${f.tipo}</td><td>${f.inicio}</td>`+
+    `<td>${f.last_vc.toLocaleString('en-US',{minimumFractionDigits:4,maximumFractionDigits:6})}</td>`+
+    `<td>${money(f.last_pat)}</td><td class="${cls(f.acum)}">${pct(f.acum)}</td></tr>`; });
+  document.getElementById('resumen').innerHTML=h+'</tbody></table>';
+
+  // Anual matrix
+  const years=[...new Set(d.funds.flatMap(f=>f.annual.map(a=>a.year)))].sort();
+  let a='<table><thead><tr><th>Fondo</th>'+years.map(y=>`<th>${y}${d.funds.some(f=>f.annual.find(x=>x.year==y&&x.ytd))?' (YTD)':''}</th>`).join('')+'</tr></thead><tbody>';
+  d.funds.forEach(f=>{ a+=`<tr><td class="fund">${f.name}</td>`+years.map(y=>{const x=f.annual.find(o=>o.year==y);return `<td class="${cls(x?x.ret:null)}">${x?pct(x.ret):''}</td>`;}).join('')+'</tr>'; });
+  document.getElementById('anual').innerHTML=a+'</tbody></table>';
+
+  // Growth chart (normalized base 100)
+  const labels=[...new Set(d.funds.flatMap(f=>f.month_end.map(m=>m.ym)))].sort();
+  const lab2txt=Object.fromEntries(d.funds.flatMap(f=>f.month_end.map(m=>[m.ym,m.label.replace('*','')])));
+  const ds=d.funds.map((f,i)=>{ const map=Object.fromEntries(f.month_end.map(m=>[m.ym,m.vc/f.base*100]));
+    return {label:f.name.replace('FIC ','').replace('FI ',''),data:labels.map(l=>l in map?+map[l].toFixed(2):null),
+      borderColor:COLORS[i],backgroundColor:COLORS[i],borderWidth:2,pointRadius:0,tension:.15,spanGaps:false}; });
+  new Chart(document.getElementById('growth'),{type:'line',
+    data:{labels:labels.map(l=>lab2txt[l]||l),datasets:ds},
+    options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+      plugins:{legend:{labels:{boxWidth:12,font:{size:11}}}},
+      scales:{y:{title:{display:true,text:'Base 100'}},x:{ticks:{maxTicksLimit:14,font:{size:10}}}}}});
+
+  // Per-fund selector
+  const sel=document.getElementById('sel');
+  d.funds.forEach((f,i)=>{const o=document.createElement('option');o.value=i;o.textContent=f.name;sel.appendChild(o);});
+  let chart=null;
+  function draw(i){
+    const f=d.funds[i];
+    document.getElementById('ftag').textContent=f.tipo+' · inicio '+f.inicio+' · '+f.nmonths+' meses';
+    const lbls=f.month_end.map(m=>m.label), vals=f.month_end.map(m=>m.ret==null?null:+(m.ret*100).toFixed(3));
+    if(chart)chart.destroy();
+    chart=new Chart(document.getElementById('monthly'),{type:'bar',
+      data:{labels:lbls,datasets:[{label:'Rend. mensual %',data:vals,
+        backgroundColor:vals.map(v=>v==null?'#ccc':(v<0?'#C0504D':'#2E8B57'))}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+        scales:{y:{title:{display:true,text:'%'}},x:{ticks:{maxTicksLimit:16,font:{size:10}}}}}});
+    let t='<table><thead><tr><th>Mes</th><th>Valor cuota</th><th>Patrimonio</th><th>Rend. mensual</th></tr></thead><tbody>';
+    [...f.month_end].reverse().forEach(m=>{t+=`<tr><td>${m.label}</td>`+
+      `<td>${m.vc.toLocaleString('en-US',{minimumFractionDigits:4,maximumFractionDigits:6})}</td>`+
+      `<td>${money(m.pat)}</td><td class="${cls(m.ret)}">${pct(m.ret)}</td></tr>`;});
+    document.getElementById('mtable').innerHTML=t+'</tbody></table>';
+  }
+  sel.addEventListener('change',e=>draw(+e.target.value)); draw(0);
+}
+</script>
+</body>
+</html>
