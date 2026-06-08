@@ -56,6 +56,12 @@
     <div class="chartbox"><canvas id="growth"></canvas></div>
   </section>
 
+  <section>
+    <h2>Patrimonio contable mensual — por fondo</h2>
+    <div class="row"><label for="selp">Fondo:</label><select id="selp"></select><span id="ptag" class="pill"></span></div>
+    <div class="chartbox" style="height:320px"><canvas id="patmonthly"></canvas></div>
+  </section>
+
   <section><h2>Rendimiento anual (desde la cuota)</h2><div class="scroll"><div id="anual"></div></div></section>
 
   <section>
@@ -116,6 +122,24 @@ function render(d){
     options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
       plugins:{legend:{labels:{boxWidth:12,font:{size:11}}}},
       scales:{y:{title:{display:true,text:'Base 100'}},x:{ticks:{maxTicksLimit:14,font:{size:10}}}}}});
+
+  // Per-fund MONTHLY PATRIMONIO selector
+  const selp=document.getElementById('selp');
+  d.funds.forEach((f,i)=>{const o=document.createElement('option');o.value=i;o.textContent=f.name;selp.appendChild(o);});
+  let pchart=null;
+  function drawPat(i){
+    const f=d.funds[i];
+    document.getElementById('ptag').textContent=f.tipo+' · patrimonio actual '+money(f.last_pat);
+    const lbls=f.month_end.map(m=>m.label), vals=f.month_end.map(m=>m.pat==null?null:Math.round(m.pat));
+    if(pchart)pchart.destroy();
+    pchart=new Chart(document.getElementById('patmonthly'),{type:'bar',
+      data:{labels:lbls,datasets:[{label:'Patrimonio (US$)',data:vals,backgroundColor:COLORS[i],borderWidth:0}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},
+        tooltip:{callbacks:{label:ctx=>' '+money(ctx.parsed.y)}}},
+        scales:{y:{title:{display:true,text:'US$'},ticks:{callback:v=>'$'+(v/1e6).toLocaleString('en-US',{maximumFractionDigits:1})+'M'}},
+                x:{ticks:{maxTicksLimit:16,font:{size:10}}}}}});
+  }
+  selp.addEventListener('change',e=>drawPat(+e.target.value)); drawPat(0);
 
   // Per-fund selector
   const sel=document.getElementById('sel');
