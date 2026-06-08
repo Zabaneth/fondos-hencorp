@@ -151,7 +151,116 @@ def build(data, out_path, corte_label="datos actualizados automáticamente"):
         c=wsn.cell(i,1,txt); c.font=ARIAL(size=sz,color=color,bold=bold); c.alignment=Alignment(wrap_text=True,vertical="top")
     wsn.column_dimensions["A"].width=140
 
+    # ===================== HOJA "DIARIO" =====================
+    from openpyxl.chart import LineChart, BarChart, Reference
+    from openpyxl.chart.shapes import GraphicalProperties
+    from openpyxl.drawing.line import LineProperties
+    PALETTE=["1F3864","2E8B57","C0504D","E0A800","7E57C2","0E7C86"]
+    f_b=Font(name="Arial",color=BLUE,size=9); f_k=Font(name="Arial",color=BLACK,size=9)
+    SHORT={k:DISP[k].replace("FIC ","").replace("FI ","") for k in ORDER}
+    mlabels=[m[0] for m in months]; mkeys=[m[1] for m in months]
+    daily={}
+    for k in ORDER:
+        dd=data[k].copy().sort_values("fecha")
+        rr=dd["vc"].pct_change(); rr.iloc[0]=dd["vc"].iloc[0]/F[k]["base"]-1
+        dd["ret"]=rr; daily[k]=dd.set_index("fecha")
+    alldates=sorted(set().union(*[set(daily[k].index) for k in ORDER]), reverse=True)
+    wsD=wb.create_sheet("Diario"); ncolsD=1+3*len(ORDER)
+    title_block(wsD,"Detalle diario — 6 fondos de inversión", SUB+" | una fila por día · lo más reciente arriba · se actualiza a diario", ncolsD)
+    wsD.merge_cells(start_row=3,start_column=1,end_row=4,end_column=1)
+    hc=wsD.cell(3,1,"Fecha"); hc.font=white; hc.fill=hdr; hc.alignment=center; hc.border=border
+    mets=["Valor cuota","Rend. diario","Patrimonio"]; col=2
+    subfill=PatternFill("solid",fgColor="2E4A7D"); subfont=Font(name="Arial",bold=True,color="FFFFFF",size=8)
+    for k in ORDER:
+        wsD.merge_cells(start_row=3,start_column=col,end_row=3,end_column=col+2)
+        gc=wsD.cell(3,col,SHORT[k]); gc.font=white; gc.fill=hdr; gc.alignment=center; gc.border=border
+        for mi,m in enumerate(mets):
+            c=wsD.cell(4,col+mi,m); c.font=subfont; c.fill=subfill; c.alignment=center; c.border=border
+        col+=3
+    for ri,dt in enumerate(alldates, start=5):
+        dc=wsD.cell(ri,1, dt.to_pydatetime()); dc.number_format=DT; dc.font=f_k; dc.alignment=center
+        col=2
+        for k in ORDER:
+            if dt in daily[k].index:
+                row=daily[k].loc[dt]
+                a=wsD.cell(ri,col, round(float(row["vc"]),8)); a.number_format=VCFMT; a.font=f_b; a.alignment=center
+                rv=row["ret"]; bcell=wsD.cell(ri,col+1, None if pd.isna(rv) else round(float(rv),6)); bcell.number_format=PCT; bcell.font=f_k; bcell.alignment=center
+                pv=row["patrimonio"]; pcell=wsD.cell(ri,col+2, None if pd.isna(pv) else round(float(pv),2)); pcell.number_format=USD; pcell.font=f_b; pcell.alignment=center
+            col+=3
+    wsD.freeze_panes="B5"; wsD.column_dimensions["A"].width=12
+    for cc in range(2,ncolsD+1): wsD.column_dimensions[get_column_letter(cc)].width=13
+
+    # ============== DATOS DE APOYO (oculta) + 18 GRÁFICAS POR FONDO ==============
+    shG=wb.create_sheet("Datos_graficas"); shG.sheet_state="hidden"
+    def annual_pat(k,y):
+        end_ym=last_ym if y==end.year else f"{y}-12"
+        return F[k]["pat"].get(end_ym)
+    def monthly_ret(k,ym):
+        if ym not in F[k]["vc"]: return None
+        i=mkeys.index(ym)
+        if ym==F[k]["inc"]: return F[k]["vc"][ym]/F[k]["base"]-1
+        pv=mkeys[i-1] if i>0 else None
+        return F[k]["vc"][ym]/F[k]["vc"][pv]-1 if (pv and pv in F[k]["vc"]) else None
+    # Patrimonio mensual (filas 2-7, encabezado fila 1)
+    shG.cell(1,1,"Fondo")
+    for j,lab in enumerate(mlabels): shG.cell(1,2+j,lab)
+    for f,k in enumerate(ORDER):
+        shG.cell(2+f,1,SHORT[k])
+        for j,ym in enumerate(mkeys):
+            p=F[k]["pat"].get(ym)
+            if p is not None: shG.cell(2+f,2+j, round(p,2))
+    nmP=1+len(months)
+    # Patrimonio anual (filas 11-16, encabezado fila 10)
+    shG.cell(10,1,"Fondo")
+    for j,y in enumerate(years): shG.cell(10,2+j,str(y))
+    for f,k in enumerate(ORDER):
+        shG.cell(11+f,1,SHORT[k])
+        for j,y in enumerate(years):
+            pv=annual_pat(k,y)
+            if pv is not None: shG.cell(11+f,2+j, round(pv,2))
+    nmAy=1+len(years)
+    # Rendimiento mensual (filas 20-25, encabezado fila 19)
+    shG.cell(19,1,"Fondo")
+    for j,lab in enumerate(mlabels): shG.cell(19,2+j,lab)
+    for f,k in enumerate(ORDER):
+        shG.cell(20+f,1,SHORT[k])
+        for j,ym in enumerate(mkeys):
+            rv=monthly_ret(k,ym)
+            if rv is not None: shG.cell(20+f,2+j, round(rv,6))
+
+    NICK={}
+    for k in ORDER:
+        d=DISP[k]
+        NICK[k]=("Opportunity" if "Opportunity" in d else "Renta Fija I" if "Renta Fija" in d
+                 else "Growth" if "Growth" in d else "Vivienda 01" if "Vivienda" in d
+                 else "Blue Whale" if "Blue Whale" in d else "Commercial" if "Commercial" in d else SHORT[k])
+    skip=max(1, round(len(months)/8))
+
+    graf=wb.create_sheet("Gráficas")
+    title_block(graf,"Gráficas por fondo — patrimonio y rendimiento", SUB+" | una gráfica por fondo · cada una con su propio eje · se actualizan solas al crecer meses/días", 22)
+
+    def make_bar(title, datarow, headerrow, lastcol, clr, numfmt, is_monthly):
+        ch=BarChart(); ch.type="col"; ch.grouping="clustered"; ch.title=title; ch.height=7; ch.width=10; ch.gapWidth=40
+        ch.add_data(Reference(shG,min_col=2,max_col=lastcol,min_row=datarow,max_row=datarow), from_rows=True, titles_from_data=False)
+        ch.set_categories(Reference(shG,min_col=2,max_col=lastcol,min_row=headerrow,max_row=headerrow))
+        ch.legend=None
+        ch.y_axis.numFmt=numfmt; ch.y_axis.delete=False; ch.x_axis.delete=False; ch.x_axis.majorGridlines=None
+        if is_monthly:
+            ch.x_axis.tickLblSkip=skip; ch.x_axis.tickMarkSkip=skip
+        ch.series[0].graphicalProperties=GraphicalProperties(solidFill=clr)
+        return ch
+
+    for f,k in enumerate(ORDER):
+        clr=PALETTE[f]; br=3+f*17; cr=4+f*17
+        for cc in range(1,23): graf.cell(br,cc).fill=hdr
+        graf.merge_cells(start_row=br,start_column=1,end_row=br,end_column=22)
+        b=graf.cell(br,1,"   "+DISP[k]); b.font=Font(name="Arial",bold=True,color="FFFFFF",size=11); b.alignment=Alignment(horizontal="left",vertical="center")
+        graf.row_dimensions[br].height=20
+        graf.add_chart(make_bar(f"Patrimonio mensual — {NICK[k]} (US$)", 2+f, 1, nmP, clr, '"$"#,##0,,"M"', True),  f"A{cr}")
+        graf.add_chart(make_bar(f"Patrimonio anual — {NICK[k]} (US$)",  11+f, 10, nmAy, clr, '"$"#,##0,,"M"', False), f"H{cr}")
+        graf.add_chart(make_bar(f"Rendimiento mensual — {NICK[k]}",     20+f, 19, nmP, clr, '0.0%', True),           f"O{cr}")
+
     if "Sheet" in wb.sheetnames: del wb["Sheet"]
-    desired=[SH_RES,SH_MEN,SH_DIC,SH_ANU,SH_VC,SH_PAT,SH_NOT]
+    desired=[SH_RES,"Gráficas",SH_MEN,SH_DIC,SH_ANU,"Diario",SH_VC,SH_PAT,SH_NOT,"Datos_graficas"]
     wb._sheets.sort(key=lambda s: desired.index(s.title))
     wb.save(out_path)
