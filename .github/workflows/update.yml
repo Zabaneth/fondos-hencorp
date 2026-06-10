@@ -1,13 +1,17 @@
 name: Actualizar fondos Hencorp
+
 on:
   schedule:
-    - cron: "0 11 * * *"   # 11:00 UTC = 05:00 El Salvador, todos los días
-  workflow_dispatch: {}
+    - cron: "0 4 * * *"    # 04:00 UTC = 22:00 (10:00 p.m.) El Salvador, todos los días
+  workflow_dispatch: {}      # permite ejecutarlo a mano desde la pestaña Actions
+
 permissions:
   contents: write
+
 concurrency:
   group: actualizar-fondos
   cancel-in-progress: false
+
 jobs:
   actualizar:
     runs-on: ubuntu-latest
@@ -18,7 +22,7 @@ jobs:
           python-version: "3.12"
       - name: Instalar dependencias
         run: pip install -r requirements.txt
-      - name: Ejecutar robot
+      - name: Ejecutar robot (scrapea, parsea, calcula)
         run: python scraper.py
       - name: Commit si hay cambios
         run: |
