@@ -1,217 +1,138 @@
 # -*- coding: utf-8 -*-
 """
-sources/sgb.py
---------------
-Fuente de datos: SGB Fondos de Inversión, S.A., Gestora de Fondos de Inversión.
+sources/hencorp.py
+------------------
+Fuente: Hencorp Gestora de Fondos de Inversión, S.A.
 
-SGB publica el histórico COMPLETO de cada fondo en un CSV directo y público:
-    https://www.sgbfondosdeinversion.com/images/historico-<codigo>.csv
+Reutiliza TAL CUAL la lógica del scraper original que ya funciona en producción
+(descubrimiento del PDF 'Comportamiento Histórico', regex de fecha+VC y de
+patrimonio, parseo con pdfplumber). No se cambió ningún regex; solo se envolvió
+en la función get_fondos() que devuelve el contrato común de sources/.
 
-Es la fuente más limpia de las cuatro gestoras (no hay que parsear PDF ni JS).
-Verificado contra datos reales:
-    - fiarcp: 3,541 días desde 12/10/2016 (base 1.0)
-    - fia180: 2,995 días desde 11/04/2018 (base 1.0)
-
-Ambos fondos son ABIERTOS y acumulan limpio (no distribuyen dividendos que
-bajen la cuota), así que el rendimiento de la cuota = rendimiento total del
-partícipe — análogo a Hencorp Opportunity. No requieren la nota de dividendos
-de Renta Fija I.
-
-CONTRATO DE SALIDA (común a todos los módulos de sources/):
-    get_fondos() -> list[dict], cada uno:
-        {
-          "gestora":      "SGB",
-          "gestora_slug": "sgb",
-          "slug":         "fiarcp",
-          "nombre":       "FI Abierto Rentable Corto Plazo",
-          "tipo":         "abierto",                 # abierto | cerrado
-          "base":         1.0,                        # valor cuota inicial (inferido)
-          "inicio":       "2016-10-12",               # primera fecha disponible
-          "data_through": "2026-06-22",               # última fecha disponible
-          "n_dias":       3541,
-          "df":           DataFrame[fecha(datetime64[ns]), vc(float), patrimonio(float)]
-        }                                            #   -> orden ASCENDENTE por fecha
-
-El orquestador (scraper.py) toma estos DataFrames diarios y calcula los cierres
-de mes / rendimientos con la metodología compartida del proyecto.
+CONTRATO DE SALIDA (idéntico a sources/sgb.py):
+    get_fondos() -> list[dict] con: gestora, gestora_slug, slug, nombre, tipo,
+    base, inicio, data_through, n_dias, last_pat, df[fecha, vc, patrimonio] (asc).
 """
-
 from __future__ import annotations
 import io
+import re
 import time
-import datetime as dt
 
 import requests
 import pandas as pd
+import pdfplumber
 
-# ---------------------------------------------------------------------------
-# Configuración
-# ---------------------------------------------------------------------------
-GESTORA = "SGB"
-GESTORA_SLUG = "sgb"
-BASE_URL = "https://www.sgbfondosdeinversion.com/images/historico-{code}.csv"
+GESTORA = "Hencorp Gestora de Fondos de Inversión"
+GESTORA_SLUG = "hencorp"
 
-# El servidor responde 404 a peticiones "sospechosas"; con UA de navegador
-# + Referer del propio sitio entrega el CSV sin problema (mismo patrón que Hencorp).
-HEADERS = {
-    "User-Agent": (
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-        "(KHTML, like Gecko) Chrome/124.0 Safari/537.36"
-    ),
-    "Referer": "https://www.sgbfondosdeinversion.com/",
-    "Accept": "text/csv,*/*;q=0.8",
-    "Accept-Language": "es-ES,es;q=0.9",
+HEAD = {
+    "User-Agent": ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                   "(KHTML, like Gecko) Chrome/124.0 Safari/537.36"),
+    "Referer": "https://www.hencorpgestora.com/",
 }
 
-# Catálogo de fondos de SGB (los 2 que publica). Si SGB lanza otro fondo,
-# basta agregar aquí su <codigo> (el de la URL del CSV) y su nombre/tipo.
-FONDOS = {
-    "fiarcp": {"nombre": "FI Abierto Rentable Corto Plazo", "tipo": "abierto"},
-    "fia180": {"nombre": "FI Abierto Plazo 180",           "tipo": "abierto"},
-}
+# (slug, nombre, tipo, url de la página del fondo) — los 6 fondos oficiales.
+FUNDS = [
+    ("01_opportunity", "FI Abierto Hencorp Opportunity", "Abierto",
+     "https://www.hencorpgestora.com/fondo-de-inversion-abierto-a-corto-plazo/"),
+    ("02_rentafija1", "FIC Renta Fija I", "Cerrado",
+     "https://www.hencorpgestora.com/fondo-de-inversion-cerrado-renta-fija-i/"),
+    ("03_growth", "FIC Inmobiliario Hencorp Growth", "Cerrado",
+     "https://www.hencorpgestora.com/fondo_de_inversion_cerrado_inmobiliario_hencorp_growth/"),
+    ("04_vivienda01", "FIC Desarrollo Inmob. Hencorp Vivienda 01", "Cerrado",
+     "https://www.hencorpgestora.com/fondo-de-inversion-inmobiliario-vivienda-01/"),
+    ("05_bluewhale", "FIC Inmobiliario Hencorp Blue Whale", "Cerrado",
+     "https://www.hencorpgestora.com/fondo-de-inversion-cerrado-inmobiliario-hencorp-blue-whale/"),
+    ("06_commercial", "FIC Inmobiliario Hencorp Commercial Properties", "Cerrado",
+     "https://www.hencorpgestora.com/fondo-inversion-cerrado-inmobiliario-hencorp-commercial-properties/"),
+]
 
-TIMEOUT = 30
+# --- regex ORIGINALES (no tocar): toleran día/mes de 1 dígito y el "$ 2 20,547,315.44" ---
+DATE_RE = re.compile(r'(\d{1,2}/\d{1,2}/\d{4})\s+(\d+\.\d+)')
+PAT_RE = re.compile(r'\$\s*([\d][\d\s,]*?\.\d{2})(?!\d)')
+
+TIMEOUT_PAGE = 60
+TIMEOUT_PDF = 180
 REINTENTOS = 3
 
 
-class SGBSourceError(RuntimeError):
-    """Error al obtener/parsear datos de SGB (lo captura el orquestador
-    para marcar la gestora como 'degradada' sin tumbar toda la corrida)."""
+class HencorpSourceError(RuntimeError):
+    """Error al obtener/parsear un fondo de Hencorp (lo captura el orquestador)."""
 
 
-# ---------------------------------------------------------------------------
-# Utilidades
-# ---------------------------------------------------------------------------
-def _limpiar_num(x) -> float | None:
-    """'$78,876,405.22' -> 78876405.22 ; '4.146%' -> 4.146 ; ''/'-' -> None."""
-    if x is None:
-        return None
-    s = (
-        str(x)
-        .strip()
-        .replace("$", "")
-        .replace(",", "")
-        .replace("%", "")
-        .replace("\xa0", "")
-        .strip()
+def find_pdf(page_url: str) -> str | None:
+    html = requests.get(page_url, headers=HEAD, timeout=TIMEOUT_PAGE).text
+    links = re.findall(
+        r'https://www\.hencorpgestora\.com/wp-content/uploads/[^"\' ]+\.pdf', html
     )
-    if s in ("", "-", "--", "N/A", "n/a", "nan", "None"):
-        return None
-    try:
-        return float(s)
-    except ValueError:
-        return None
+    cand = sorted({L for L in links if re.search(r'comportamiento.*histor', L, re.I)})
+    return cand[0] if cand else None
 
 
-def _col(cols, *claves) -> str | None:
-    """Encuentra una columna por nombre (todas las 'claves' presentes, sin
-    importar mayúsculas/acentos del orden). Robusto a cambios de posición."""
-    for c in cols:
-        cl = str(c).lower()
-        if all(k in cl for k in claves):
-            return c
-    return None
-
-
-def _descargar_csv(code: str) -> str:
-    url = BASE_URL.format(code=code)
-    ultimo_err = None
-    for intento in range(1, REINTENTOS + 1):
-        try:
-            r = requests.get(url, headers=HEADERS, timeout=TIMEOUT)
-            if r.status_code == 200 and r.text.strip():
-                r.encoding = r.apparent_encoding or "utf-8"
-                return r.text
-            ultimo_err = f"HTTP {r.status_code} (bytes={len(r.content)})"
-        except requests.RequestException as e:
-            ultimo_err = repr(e)
-        time.sleep(1.5 * intento)
-    raise SGBSourceError(f"[SGB:{code}] no se pudo descargar {url}: {ultimo_err}")
-
-
-def _parsear(code: str, txt: str) -> pd.DataFrame:
-    """CSV (newest-first, valores entre comillas, montos con $ y miles) ->
-    DataFrame[fecha, vc, patrimonio] ASCENDENTE."""
-    delim = ";" if txt.splitlines()[0].count(";") > txt.splitlines()[0].count(",") else ","
-    df = pd.read_csv(io.StringIO(txt), sep=delim, engine="python", dtype=str)
-    df.columns = [str(c).strip() for c in df.columns]
-
-    c_fecha = _col(df.columns, "fecha")
-    c_vc = _col(df.columns, "valor", "cuota") or _col(df.columns, "cuota", "diari")
-    c_pat = _col(df.columns, "patrimonio")
-    if not (c_fecha and c_vc and c_pat):
-        raise SGBSourceError(
-            f"[SGB:{code}] columnas no reconocidas: {list(df.columns)[:8]}"
-        )
-
-    out = pd.DataFrame(
-        {
-            "fecha": pd.to_datetime(df[c_fecha].astype(str).str.strip(),
-                                    dayfirst=True, errors="coerce"),
-            "vc": df[c_vc].map(_limpiar_num),
-            "patrimonio": df[c_pat].map(_limpiar_num),
-        }
-    )
-    out = (
-        out.dropna(subset=["fecha", "vc"])
-        .drop_duplicates(subset=["fecha"], keep="last")
+def parse_pdf(content: bytes) -> pd.DataFrame:
+    rows = []
+    with pdfplumber.open(io.BytesIO(content)) as pdf:
+        for pg in pdf.pages:
+            for line in (pg.extract_text() or "").split("\n"):
+                m = DATE_RE.match(line.strip())
+                if not m:
+                    continue
+                d = pd.to_datetime(m.group(1), dayfirst=True)
+                vc = float(m.group(2))
+                rest = line.strip()[m.end():]
+                pm = PAT_RE.search(rest)
+                patr = float(pm.group(1).replace(" ", "").replace(",", "")) if pm else None
+                rows.append((d, vc, patr))
+    if not rows:
+        raise HencorpSourceError("sin filas parseadas")
+    return (
+        pd.DataFrame(rows, columns=["fecha", "vc", "patrimonio"])
+        .drop_duplicates("fecha")
         .sort_values("fecha")
         .reset_index(drop=True)
     )
-    if out.empty:
-        raise SGBSourceError(f"[SGB:{code}] CSV sin filas válidas tras limpieza")
-    return out
 
 
-# ---------------------------------------------------------------------------
-# API pública del módulo
-# ---------------------------------------------------------------------------
-def get_fondos() -> list[dict]:
-    """Devuelve la lista de fondos de SGB con su serie diaria normalizada.
-    Lanza SGBSourceError si algún fondo no se pudo obtener."""
-    resultados: list[dict] = []
-    for code, meta in FONDOS.items():
-        df = _parsear(code, _descargar_csv(code))
-        base = float(df["vc"].iloc[0])
-        inicio = df["fecha"].iloc[0].date().isoformat()
-        through = df["fecha"].iloc[-1].date().isoformat()
-        last_pat = df["patrimonio"].dropna()
-        resultados.append(
-            {
+def _fund(slug: str, nombre: str, tipo: str, url: str) -> dict:
+    ultimo_err = None
+    for intento in range(1, REINTENTOS + 1):
+        try:
+            pdf_url = find_pdf(url)
+            if not pdf_url:
+                raise HencorpSourceError("no se encontró PDF de Comportamiento Histórico")
+            content = requests.get(pdf_url, headers=HEAD, timeout=TIMEOUT_PDF).content
+            df = parse_pdf(content)
+            last_pat = df["patrimonio"].dropna()
+            return {
                 "gestora": GESTORA,
                 "gestora_slug": GESTORA_SLUG,
-                "slug": code,
-                "nombre": meta["nombre"],
-                "tipo": meta["tipo"],
-                "base": base,
-                "inicio": inicio,
-                "data_through": through,
+                "slug": slug,
+                "nombre": nombre,
+                "tipo": tipo,
+                "base": float(df["vc"].iloc[0]),
+                "inicio": df["fecha"].min().strftime("%Y-%m-%d"),
+                "data_through": df["fecha"].max().strftime("%Y-%m-%d"),
                 "n_dias": int(len(df)),
                 "last_pat": float(last_pat.iloc[-1]) if not last_pat.empty else None,
+                "pdf": pdf_url,
                 "df": df,
             }
-        )
-    return resultados
+        except Exception as e:  # noqa: BLE001
+            ultimo_err = e
+            time.sleep(2 * intento)
+    raise HencorpSourceError(f"[Hencorp:{slug}] {ultimo_err}")
 
 
-# ---------------------------------------------------------------------------
-# Autoprueba:  python sources/sgb.py
-# ---------------------------------------------------------------------------
+def get_fondos() -> list[dict]:
+    """Devuelve los 6 fondos de Hencorp con su serie diaria normalizada.
+    Lanza HencorpSourceError si algún fondo falla (el orquestador decide qué hacer)."""
+    return [_fund(slug, nombre, tipo, url) for slug, nombre, tipo, url in FUNDS]
+
+
 if __name__ == "__main__":
-    print("Probando fuente SGB...\n")
+    print("Probando fuente Hencorp...\n")
     for f in get_fondos():
-        d = f["df"]
-        print(f"== {f['nombre']}  ({f['slug']}, {f['tipo']}) ==")
-        print(f"   {f['n_dias']} días | inicio {f['inicio']} (base {f['base']:.6f}) "
-              f"| último {f['data_through']}")
-        print(f"   último patrimonio = ${f['last_pat']:,.2f}")
-        # cierres de mes + rendimiento mensual (misma fórmula del proyecto)
-        eom = d.assign(ym=d["fecha"].dt.to_period("M")).groupby("ym").tail(1)
-        eom = eom.set_index("ym")
-        eom["rend_m"] = eom["vc"].pct_change()
-        print("   últimos 3 cierres de mes (VC | rend. mensual):")
-        for ym, row in eom.tail(3).iterrows():
-            rm = "base" if pd.isna(row["rend_m"]) else f"{row['rend_m']*100:+.4f}%"
-            print(f"     {ym}  VC={row['vc']:.6f}  {rm}")
-        print()
-    print("OK — SGB lista para integrarse al orquestador.")
+        print(f"OK {f['nombre']} ({f['slug']}): {f['n_dias']} días, "
+              f"inicio {f['inicio']}, último {f['data_through']}, "
+              f"patrimonio ${f['last_pat']:,.2f}")
+    print("\nHencorp lista.")
