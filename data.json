@@ -24,8 +24,7 @@
   {
    "slug": "atlantida",
    "nombre": "Atlántida Capital",
-   "estado": "pendiente",
-   "motivo": "Sitio tras WAF (F5) + cadena TLS incompleta; pendiente identificar endpoint de datos.",
+   "estado": "degradado",
    "n_fondos": 0,
    "excel": "atlantida.xlsx",
    "download": "Fondos Atlántida.xlsx"
