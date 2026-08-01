@@ -1,13 +1,13 @@
 {
- "updated_at": "2026-07-31",
- "data_through": "2026-07-30",
+ "updated_at": "2026-08-01",
+ "data_through": "2026-08-06",
  "source": "Sitios públicos de las gestoras de fondos de inversión de El Salvador",
  "gestoras": [
   {
    "slug": "hencorp",
    "nombre": "Hencorp Gestora de Fondos de Inversión",
    "estado": "ok",
-   "data_through": "2026-07-30",
+   "data_through": "2026-08-06",
    "n_fondos": 6,
    "excel": "hencorp.xlsx",
    "download": "Fondos Hencorp.xlsx"
@@ -16,7 +16,7 @@
    "slug": "sgb",
    "nombre": "SGB Fondos de Inversión",
    "estado": "ok",
-   "data_through": "2026-07-30",
+   "data_through": "2026-08-06",
    "n_fondos": 2,
    "excel": "sgb.xlsx",
    "download": "Fondos SGB.xlsx"
@@ -49,11 +49,11 @@
   {
    "base": 1.0,
    "inicio": "2023-05-02",
-   "last_date": "2026-07-30",
-   "last_vc": 1.18058617,
-   "last_pat": 221376746.09,
+   "last_date": "2026-07-31",
+   "last_vc": 1.18074522,
+   "last_pat": 232122826.53,
    "nmonths": 39,
-   "acum": 0.180586,
+   "acum": 0.180745,
    "month_end": [
     {
      "ym": "2023-05",
@@ -324,9 +324,9 @@
     {
      "ym": "2026-07",
      "label": "jul-2026",
-     "vc": 1.18058617,
-     "pat": 221376746.09,
-     "ret": 0.003858
+     "vc": 1.18074522,
+     "pat": 232122826.53,
+     "ret": 0.003993
     }
    ],
    "annual": [
@@ -347,7 +347,7 @@
     },
     {
      "year": 2026,
-     "ret": 0.027663,
+     "ret": 0.027802,
      "ytd": true
     }
    ],
@@ -357,16 +357,16 @@
    "gestora": "Hencorp Gestora de Fondos de Inversión",
    "gestora_slug": "hencorp",
    "slug": "01_opportunity",
-   "pdf": "https://www.hencorpgestora.com/wp-content/uploads/2026/07/Comportamiento-Historico-del-Fondo-de-Inversion-Abierto-Hencorp-Opportunity-Publicacion.pdf"
+   "pdf": "https://www.hencorpgestora.com/wp-content/uploads/2026/08/Comportamiento-Historico-del-Fondo-de-Inversion-Abierto-Hencorp-Opportunity-Publicacion.pdf"
   },
   {
    "base": 1000.0,
    "inicio": "2023-10-13",
-   "last_date": "2026-07-30",
-   "last_vc": 1047.8939178,
-   "last_pat": 686093872.17,
+   "last_date": "2026-07-31",
+   "last_vc": 1048.13922001,
+   "last_pat": 686254480.35,
    "nmonths": 34,
-   "acum": 0.047894,
+   "acum": 0.048139,
    "month_end": [
     {
      "ym": "2023-10",
@@ -602,9 +602,9 @@
     {
      "ym": "2026-07",
      "label": "jul-2026",
-     "vc": 1047.8939178,
-     "pat": 686093872.17,
-     "ret": 0.006832
+     "vc": 1048.13922001,
+     "pat": 686254480.35,
+     "ret": 0.007068
     }
    ],
    "annual": [
@@ -625,7 +625,7 @@
     },
     {
      "year": 2026,
-     "ret": 0.007353,
+     "ret": 0.007589,
      "ytd": true
     }
    ],
@@ -635,16 +635,16 @@
    "gestora": "Hencorp Gestora de Fondos de Inversión",
    "gestora_slug": "hencorp",
    "slug": "02_rentafija1",
-   "pdf": "https://www.hencorpgestora.com/wp-content/uploads/2026/07/Comportamiento-Historico-del-Fondo-de-Inversion-Cerrado-Renta-Fija-I-Publicacion.pdf"
+   "pdf": "https://www.hencorpgestora.com/wp-content/uploads/2026/08/Comportamiento-Historico-del-Fondo-de-Inversion-Cerrado-Renta-Fija-I-Publicacion.pdf"
   },
   {
    "base": 1000.0,
    "inicio": "2024-03-21",
-   "last_date": "2026-07-30",
-   "last_vc": 1225.602367,
-   "last_pat": 27437560.19,
-   "nmonths": 29,
-   "acum": 0.225602,
+   "last_date": "2026-08-06",
+   "last_vc": 1226.81701032,
+   "last_pat": 27464752.41,
+   "nmonths": 30,
+   "acum": 0.226817,
    "month_end": [
     {
      "ym": "2024-03",
@@ -845,9 +845,16 @@
     {
      "ym": "2026-07",
      "label": "jul-2026",
-     "vc": 1225.602367,
-     "pat": 27437560.19,
-     "ret": 0.00432
+     "vc": 1225.84426855,
+     "pat": 27442975.64,
+     "ret": 0.004518
+    },
+    {
+     "ym": "2026-08",
+     "label": "ago-2026",
+     "vc": 1226.81701032,
+     "pat": 27464752.41,
+     "ret": 0.000794
     }
    ],
    "annual": [
@@ -863,7 +870,7 @@
     },
     {
      "year": 2026,
-     "ret": 0.044418,
+     "ret": 0.045453,
      "ytd": true
     }
    ],
@@ -873,16 +880,16 @@
    "gestora": "Hencorp Gestora de Fondos de Inversión",
    "gestora_slug": "hencorp",
    "slug": "03_growth",
-   "pdf": "https://www.hencorpgestora.com/wp-content/uploads/2026/07/Comportamiento-Historico-del-Fondo-de-Inversion-Cerrado-Inmobiliario-Hencorp-Growth-Publicacion.pdf"
+   "pdf": "https://www.hencorpgestora.com/wp-content/uploads/2026/08/Comportamiento-Historico-del-Fondo-de-Inversion-Cerrado-Inmobiliario-Hencorp-Growth-Publicacion.pdf"
   },
   {
    "base": 1000.0,
    "inicio": "2025-06-11",
-   "last_date": "2026-07-30",
-   "last_vc": 1174.89252706,
-   "last_pat": 18671392.04,
-   "nmonths": 14,
-   "acum": 0.174893,
+   "last_date": "2026-08-06",
+   "last_vc": 1174.8336081,
+   "last_pat": 18670455.7,
+   "nmonths": 15,
+   "acum": 0.174834,
    "month_end": [
     {
      "ym": "2025-06",
@@ -978,9 +985,16 @@
     {
      "ym": "2026-07",
      "label": "jul-2026",
-     "vc": 1174.89252706,
-     "pat": 18671392.04,
-     "ret": -0.001361
+     "vc": 1174.87875849,
+     "pat": 18671173.23,
+     "ret": -0.001373
+    },
+    {
+     "ym": "2026-08",
+     "label": "ago-2026",
+     "vc": 1174.8336081,
+     "pat": 18670455.7,
+     "ret": -3.8e-05
     }
    ],
    "annual": [
@@ -991,7 +1005,7 @@
     },
     {
      "year": 2026,
-     "ret": 0.209015,
+     "ret": 0.208954,
      "ytd": true
     }
    ],
@@ -1001,16 +1015,16 @@
    "gestora": "Hencorp Gestora de Fondos de Inversión",
    "gestora_slug": "hencorp",
    "slug": "04_vivienda01",
-   "pdf": "https://www.hencorpgestora.com/wp-content/uploads/2026/07/Comportamiento-Historico-del-Fondo-de-Inversion-Cerrado-de-Desarrollo-Inmobiliario-Hencorp-Vivienda-01-Publicacion.pdf"
+   "pdf": "https://www.hencorpgestora.com/wp-content/uploads/2026/08/Comportamiento-Historico-del-Fondo-de-Inversion-Cerrado-de-Desarrollo-Inmobiliario-Hencorp-Vivienda-01-Publicacion.pdf"
   },
   {
    "base": 1000.0,
    "inicio": "2025-09-19",
-   "last_date": "2026-07-30",
-   "last_vc": 1004.11283349,
-   "last_pat": 7640294.55,
-   "nmonths": 11,
-   "acum": 0.004113,
+   "last_date": "2026-08-06",
+   "last_vc": 1004.18530293,
+   "last_pat": 7640845.97,
+   "nmonths": 12,
+   "acum": 0.004185,
    "month_end": [
     {
      "ym": "2025-09",
@@ -1085,9 +1099,16 @@
     {
      "ym": "2026-07",
      "label": "jul-2026",
-     "vc": 1004.11283349,
-     "pat": 7640294.55,
-     "ret": -0.009006
+     "vc": 1004.4542108,
+     "pat": 7642892.09,
+     "ret": -0.008669
+    },
+    {
+     "ym": "2026-08",
+     "label": "ago-2026",
+     "vc": 1004.18530293,
+     "pat": 7640845.97,
+     "ret": -0.000268
     }
    ],
    "annual": [
@@ -1098,7 +1119,7 @@
     },
     {
      "year": 2026,
-     "ret": -0.008782,
+     "ret": -0.008711,
      "ytd": true
     }
    ],
@@ -1108,16 +1129,16 @@
    "gestora": "Hencorp Gestora de Fondos de Inversión",
    "gestora_slug": "hencorp",
    "slug": "05_bluewhale",
-   "pdf": "https://www.hencorpgestora.com/wp-content/uploads/2026/07/Comportamiento-Historico-del-Fondo-de-Inversion-Cerrado-Inmobiliario-Hencorp-Blue-Whale-Publicacion.pdf"
+   "pdf": "https://www.hencorpgestora.com/wp-content/uploads/2026/08/Comportamiento-Historico-del-Fondo-de-Inversion-Cerrado-Inmobiliario-Hencorp-Blue-Whale-Publicacion.pdf"
   },
   {
    "base": 1000.0,
    "inicio": "2026-05-15",
-   "last_date": "2026-07-30",
-   "last_vc": 1027.97538533,
-   "last_pat": 13312281.24,
-   "nmonths": 3,
-   "acum": 0.027975,
+   "last_date": "2026-08-06",
+   "last_vc": 1030.74934749,
+   "last_pat": 13348204.05,
+   "nmonths": 4,
+   "acum": 0.030749,
    "month_end": [
     {
      "ym": "2026-05",
@@ -1136,15 +1157,22 @@
     {
      "ym": "2026-07",
      "label": "jul-2026",
-     "vc": 1027.97538533,
-     "pat": 13312281.24,
-     "ret": 0.0117
+     "vc": 1028.37166718,
+     "pat": 13317413.09,
+     "ret": 0.01209
+    },
+    {
+     "ym": "2026-08",
+     "label": "ago-2026",
+     "vc": 1030.74934749,
+     "pat": 13348204.05,
+     "ret": 0.002312
     }
    ],
    "annual": [
     {
      "year": 2026,
-     "ret": 0.027975,
+     "ret": 0.030749,
      "ytd": true
     }
    ],
@@ -1154,16 +1182,16 @@
    "gestora": "Hencorp Gestora de Fondos de Inversión",
    "gestora_slug": "hencorp",
    "slug": "06_commercial",
-   "pdf": "https://www.hencorpgestora.com/wp-content/uploads/2026/07/Comportamiento-Historico-del-Fondo-de-Inversion-Cerrado-Inmobiliario-Hencorp-Commercial-Properties-Publicacion.pdf"
+   "pdf": "https://www.hencorpgestora.com/wp-content/uploads/2026/08/Comportamiento-Historico-del-Fondo-de-Inversion-Cerrado-Inmobiliario-Hencorp-Commercial-Properties-Publicacion.pdf"
   },
   {
    "base": 1.0,
    "inicio": "2016-10-12",
-   "last_date": "2026-07-30",
-   "last_vc": 1.40927466,
-   "last_pat": 91348070.6,
-   "nmonths": 118,
-   "acum": 0.409275,
+   "last_date": "2026-08-06",
+   "last_vc": 1.41035119,
+   "last_pat": 90561588.72,
+   "nmonths": 119,
+   "acum": 0.410351,
    "month_end": [
     {
      "ym": "2016-10",
@@ -1987,9 +2015,16 @@
     {
      "ym": "2026-07",
      "label": "jul-2026",
-     "vc": 1.40927466,
-     "pat": 91348070.6,
-     "ret": 0.003152
+     "vc": 1.40942812,
+     "pat": 90502316.17,
+     "ret": 0.003261
+    },
+    {
+     "ym": "2026-08",
+     "label": "ago-2026",
+     "vc": 1.41035119,
+     "pat": 90561588.72,
+     "ret": 0.000655
     }
    ],
    "annual": [
@@ -2045,7 +2080,7 @@
     },
     {
      "year": 2026,
-     "ret": 0.023034,
+     "ret": 0.023815,
      "ytd": true
     }
    ],
@@ -2059,11 +2094,11 @@
   {
    "base": 1.0,
    "inicio": "2018-04-11",
-   "last_date": "2026-07-30",
-   "last_vc": 1.56432868,
-   "last_pat": 43540164.77,
-   "nmonths": 100,
-   "acum": 0.564329,
+   "last_date": "2026-08-06",
+   "last_vc": 1.56586872,
+   "last_pat": 43853663.76,
+   "nmonths": 101,
+   "acum": 0.565869,
    "month_end": [
     {
      "ym": "2018-04",
@@ -2761,9 +2796,16 @@
     {
      "ym": "2026-07",
      "label": "jul-2026",
-     "vc": 1.56432868,
-     "pat": 43540164.77,
-     "ret": 0.004398
+     "vc": 1.56454853,
+     "pat": 44143719.11,
+     "ret": 0.004539
+    },
+    {
+     "ym": "2026-08",
+     "label": "ago-2026",
+     "vc": 1.56586872,
+     "pat": 43853663.76,
+     "ret": 0.000844
     }
    ],
    "annual": [
@@ -2809,7 +2851,7 @@
     },
     {
      "year": 2026,
-     "ret": 0.032841,
+     "ret": 0.033858,
      "ytd": true
     }
    ],
